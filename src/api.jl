@@ -152,7 +152,7 @@ function set_auth_token(token::AbstractString)
 	  return nothing
 end
 
-function get_table(id::AbstractString; paginate=true, ticker="", from="", to="", 
+function get_table(id::AbstractString; paginate=true, ticker="", date="", from="", to="", 
     format="TimeArray", api_key="", columns="")
 
     # verify and use API key
@@ -179,6 +179,12 @@ function get_table(id::AbstractString; paginate=true, ticker="", from="", to="",
 
     if to != ""
         query_args["date.lt"] = to
+    end
+
+    if date != ""
+        delete!(query_args, "date.gt")
+        delete!(query_args, "date.lt")
+        query_args["date"] = date
     end
 
     if ticker != ""
