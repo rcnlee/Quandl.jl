@@ -10,7 +10,8 @@ export quandlget,
        quandl,
        quandlsearch,
        set_auth_token,
-       interactivequandl
+       interactivequandl,
+       get_table
 
 include("api.jl")
 include("timearray.jl")

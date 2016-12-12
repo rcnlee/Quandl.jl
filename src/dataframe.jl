@@ -3,6 +3,7 @@ function dataframe(resp::Requests.Response)
     buffer = PipeBuffer() # open a buffer in which to dump data
     df     = DataFrame()  # init empty DataFrame
 
+    datesym = nothing
     try
         # Write the data to the buffer
         write(buffer, Requests.text(resp))
@@ -11,17 +12,22 @@ function dataframe(resp::Requests.Response)
         df = readtable(buffer)
         
         # Convert dates to Dates object
-        df[:Date] = Date[Date(d) for d in df[:Date]]
+        if :Date in names(df)
+            datesym = :Date
+            df[datesym] = Date[Date(d) for d in df[datesym]]
+        elseif :date in names(df)
+            datesym = :date
+            df[datesym] = Date[Date(d) for d in df[datesym]]
+        end
 
     finally
         close(buffer)   
     end
 
     # force oldest date to first row
-
-    if issorted(df[:Date])
+    if datesym == nothing || issorted(df[datesym]) 
         return df
     else
-        return sort!(df)
+        return sort!(df, cols=[datesym])
     end
 end

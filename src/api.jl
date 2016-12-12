@@ -6,7 +6,7 @@ function quandlget(id::AbstractString; order="des", rows=100, frequency="daily",
         if !ispath(joinpath(dirname(@__FILE__),"../token/"))
             println("Note: for unlimited access, you may need to get an API key at quandl.com")
         else
-            api_key=readall(joinpath(dirname(@__FILE__),"../token/auth_token"))
+            api_key=readstring(joinpath(dirname(@__FILE__),"../token/auth_token"))
             if api_key==""
                 println("Note: for unlimited access, you may need to get an API key at quandl.com")
             else
@@ -150,4 +150,62 @@ function set_auth_token(token::AbstractString)
     end
 
 	  return nothing
+end
+
+function get_table(id::AbstractString; paginate=true, ticker="", from="", to="", 
+    format="TimeArray", api_key="", columns="")
+
+    # verify and use API key
+    if api_key==""
+        if !ispath(joinpath(dirname(@__FILE__),"../token/"))
+            println("Note: for unlimited access, you may need to get an API key at quandl.com")
+        else
+            api_key=readstring(joinpath(dirname(@__FILE__),"../token/auth_token"))
+            if api_key==""
+                println("Note: for unlimited access, you may need to get an API key at quandl.com")
+            else
+                println("Using API key: ", api_key)
+            end
+        end
+    end
+
+    # Create a dictionary with the Query arguments that we pass to get() function
+    query_args = Dict{Any,Any}("api_key" => api_key)
+
+    # Ignore rows argument if start or end date range specified
+    if from != ""
+        query_args["date.gt"] = from
+    end
+
+    if to != ""
+        query_args["date.lt"] = to
+    end
+
+    if ticker != ""
+        query_args["ticker"] = ticker
+    end
+
+    if columns != ""
+        query_args["qopts.columns"] = columns
+    end
+
+    # Get the response from Quandl's API, using Query arguments (see Response.jl README)
+    resp = get("https://www.quandl.com/api/v3/datatables/$id.csv", query = query_args)
+
+    # return Union{} in case of fetch error
+    if resp.status != 200
+        println(" $(resp.status): Error executing the request.")
+        Union{}
+    else
+        # Convert the response to the right DataType
+        if format == "TimeArray"
+            timearray(resp)
+        elseif format == "DataFrame"
+            dataframe(resp)
+        else
+            # return the raw fetch if requested format is not supported
+            println("Currently only TimeArray and DataFrame formats are supported")
+            resp
+        end
+    end
 end
